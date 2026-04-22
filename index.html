@@ -34,19 +34,35 @@
             color: white;
             border-color: #f97316;
         }
+
+        .tool-chip {
+            transition: all 0.2s ease;
+        }
+
+        /* 自定義捲軸 */
+        .custom-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #fb923c;
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body class="max-w-md mx-auto bg-gray-50 min-h-screen pb-10">
 
     <!-- Header -->
-    <header class="bg-white px-6 pt-8 pb-6 rounded-b-3xl shadow-sm sticky top-0 z-50">
+    <header class="bg-white px-6 pt-8 pb-6 rounded-b-[2rem] shadow-sm sticky top-0 z-50 border-b border-orange-50">
         <div class="flex justify-between items-center">
             <div>
                 <h1 class="text-2xl font-bold text-gray-800">家庭烹飪大師</h1>
-                <p class="text-sm text-gray-500">五日便當食譜設計</p>
+                <p class="text-xs text-orange-500 font-medium">個人化五日便當專家</p>
             </div>
-            <div class="bg-orange-100 p-3 rounded-2xl">
-                <i class="fa-solid fa-utensils text-orange-500 text-xl"></i>
+            <div class="bg-orange-500 p-3 rounded-2xl shadow-lg shadow-orange-200">
+                <i class="fa-solid fa-utensils text-white text-xl"></i>
             </div>
         </div>
     </header>
@@ -55,33 +71,33 @@
         
         <!-- Ingredients Input -->
         <section class="space-y-3">
-            <label class="flex items-center text-gray-700 font-medium space-x-2">
-                <i class="fa-solid fa-basket-shopping text-orange-500"></i>
+            <label class="flex items-center text-gray-700 font-bold space-x-2">
+                <div class="w-1 h-4 bg-orange-500 rounded-full"></div>
                 <span>冰箱裡的食材</span>
             </label>
             <textarea id="ingredients" 
-                class="w-full h-32 p-4 rounded-2xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all shadow-sm text-gray-600 leading-relaxed"
-                placeholder="例如：雞胸肉、雞蛋、高麗菜、洋蔥..."></textarea>
+                class="w-full h-32 p-4 rounded-2xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all shadow-sm text-gray-600 leading-relaxed placeholder:text-gray-300"
+                placeholder="例如：雞腿肉、青江菜、雞蛋、紅蘿蔔、洋蔥..."></textarea>
         </section>
 
         <!-- Tool Selection -->
         <section class="space-y-3">
-            <label class="flex items-center text-gray-700 font-medium space-x-2">
-                <i class="fa-solid fa-fire-burner text-orange-500"></i>
-                <span>廚房加熱工具</span>
+            <label class="flex items-center text-gray-700 font-bold space-x-2">
+                <div class="w-1 h-4 bg-orange-500 rounded-full"></div>
+                <span>可用廚房工具</span>
             </label>
             <div class="grid grid-cols-2 gap-3" id="tool-container">
-                <button onclick="toggleTool(this)" data-tool="IH爐" class="tool-chip flex items-center justify-center p-3 rounded-xl border-2 border-gray-100 bg-white text-gray-600 transition-all">
-                    <span class="text-sm font-medium">IH 爐</span>
+                <button onclick="toggleTool(this)" data-tool="IH爐" class="tool-chip flex items-center justify-center p-3 rounded-xl border border-gray-100 bg-white text-gray-600 font-medium shadow-sm active:scale-95">
+                    IH 爐
                 </button>
-                <button onclick="toggleTool(this)" data-tool="卡式爐" class="tool-chip flex items-center justify-center p-3 rounded-xl border-2 border-gray-100 bg-white text-gray-600 transition-all">
-                    <span class="text-sm font-medium">卡式爐</span>
+                <button onclick="toggleTool(this)" data-tool="卡式爐" class="tool-chip flex items-center justify-center p-3 rounded-xl border border-gray-100 bg-white text-gray-600 font-medium shadow-sm active:scale-95">
+                    卡式爐
                 </button>
-                <button onclick="toggleTool(this)" data-tool="水波爐" class="tool-chip flex items-center justify-center p-3 rounded-xl border-2 border-gray-100 bg-white text-gray-600 transition-all">
-                    <span class="text-sm font-medium">水波爐</span>
+                <button onclick="toggleTool(this)" data-tool="水波爐" class="tool-chip flex items-center justify-center p-3 rounded-xl border border-gray-100 bg-white text-gray-600 font-medium shadow-sm active:scale-95">
+                    水波爐
                 </button>
-                <button onclick="toggleTool(this)" data-tool="烤箱" class="tool-chip flex items-center justify-center p-3 rounded-xl border-2 border-gray-100 bg-white text-gray-600 transition-all">
-                    <span class="text-sm font-medium">烤箱</span>
+                <button onclick="toggleTool(this)" data-tool="烤箱" class="tool-chip flex items-center justify-center p-3 rounded-xl border border-gray-100 bg-white text-gray-600 font-medium shadow-sm active:scale-95">
+                    烤箱
                 </button>
             </div>
         </section>
@@ -89,46 +105,51 @@
         <!-- Generate Button -->
         <button id="generate-btn" 
             onclick="generatePlan()"
-            class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-200 transition-all active:scale-95 flex items-center justify-center space-x-2">
-            <i class="fa-solid fa-magic-wand-sparkles"></i>
-            <span>生成五日食譜</span>
+            class="w-full bg-gray-900 hover:bg-black text-white font-bold py-4 rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center space-x-3">
+            <i class="fa-solid fa-wand-magic-sparkles text-orange-400"></i>
+            <span>設計專屬食譜</span>
         </button>
 
-        <!-- Result Section -->
-        <div id="loading" class="hidden flex flex-col items-center py-10 space-y-4">
+        <!-- Loading State -->
+        <div id="loading" class="hidden flex flex-col items-center py-12 space-y-4">
             <div class="loader"></div>
-            <p class="text-gray-500 text-sm animate-pulse">主廚正在規劃您的專屬便當...</p>
+            <div class="text-center">
+                <p class="text-gray-800 font-bold">主廚正在規劃中...</p>
+                <p class="text-gray-400 text-xs mt-1">正在確保營養與工具適配性</p>
+            </div>
         </div>
 
-        <!-- Diagnostic Error Box -->
-        <div id="error-box" class="hidden p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm">
-            <div class="flex items-start space-x-2">
-                <i class="fa-solid fa-triangle-exclamation mt-1"></i>
-                <div>
-                    <p class="font-bold">發生錯誤</p>
-                    <p id="error-msg" class="mt-1"></p>
-                    <p id="error-hint" class="mt-2 text-xs opacity-75 border-top pt-2 border-red-200"></p>
+        <!-- Error Message -->
+        <div id="error-box" class="hidden p-5 bg-red-50 border border-red-100 rounded-2xl">
+            <div class="flex space-x-3">
+                <i class="fa-solid fa-circle-exclamation text-red-500 mt-1"></i>
+                <div class="flex-grow">
+                    <p class="font-bold text-red-800 text-sm">主廚遇到了一些狀況</p>
+                    <p id="error-msg" class="text-red-600 text-xs mt-1 leading-relaxed"></p>
+                    <div id="diagnostic-hint" class="mt-3 p-2 bg-white/50 rounded-lg text-[10px] text-red-400 border border-red-100"></div>
                 </div>
             </div>
         </div>
 
+        <!-- Recipe Results -->
         <div id="recipe-result" class="space-y-6 pb-10"></div>
     </main>
 
-    <!-- Modal for Instructions -->
-    <div id="instruction-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] p-6 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4">
-            <div class="flex justify-between items-center">
-                <h3 id="modal-title" class="text-lg font-bold text-gray-800">料理步驟</h3>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+    <!-- Step Modal -->
+    <div id="instruction-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[100] p-6 backdrop-blur-sm transition-opacity">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl space-y-6 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-orange-500"></div>
+            <div class="flex justify-between items-start">
+                <h3 id="modal-title" class="text-xl font-bold text-gray-800 pr-4 leading-tight"></h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl transition-colors">&times;</button>
             </div>
-            <div id="modal-content" class="text-gray-600 text-sm leading-relaxed overflow-y-auto max-h-96"></div>
-            <button onclick="closeModal()" class="w-full bg-gray-100 py-3 rounded-xl font-medium text-gray-600">關閉</button>
+            <div id="modal-content" class="custom-scroll text-gray-600 text-sm leading-relaxed overflow-y-auto max-h-[60vh] space-y-4 pr-2"></div>
+            <button onclick="closeModal()" class="w-full bg-orange-500 py-4 rounded-xl font-bold text-white shadow-lg shadow-orange-100 active:scale-95 transition-all">收到了，開始動手做</button>
         </div>
     </div>
 
     <script>
-        // 請在此處填入您的 API Key
+        // API Key 設定：已更新為最新的金鑰
         const apiKey = "AIzaSyAihawTkcY1rbI7NedpHdfUr3P1gvjNwow"; 
         const selectedTools = new Set();
 
@@ -136,23 +157,23 @@
             const tool = btn.getAttribute('data-tool');
             if (selectedTools.has(tool)) {
                 selectedTools.delete(tool);
-                btn.classList.remove('active');
+                btn.classList.remove('active', 'border-orange-500', 'ring-2', 'ring-orange-100');
             } else {
                 selectedTools.add(tool);
-                btn.classList.add('active');
+                btn.classList.add('active', 'border-orange-500', 'ring-2', 'ring-orange-100');
             }
         }
 
-        async function callGemini(prompt) {
-            // 本機執行建議使用 gemini-1.5-flash 以獲得最佳相容性
-            const modelName = "gemini-1.5-flash"; 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+        async function callGemini(userQuery) {
+            // 使用環境支援的 Gemini 2.5 Flash Preview 模型
+            const model = "gemini-2.5-flash-preview-09-2025";
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
             
-            const systemInstruction = "你是一位烹飪專家。請根據食材與工具設計5天便當食譜。每天2道菜。格式必須為純 JSON。";
+            const systemPrompt = "你是一位精通各國料理的家庭烹飪大師。請根據食材與工具，規劃週一至週五的便當食譜。每天必須有兩道菜。請確保輸出的 JSON 格式正確，包含 dailyPlan 與 missingIngredients。";
 
             const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                systemInstruction: { parts: [{ text: systemInstruction }] },
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
                 generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: {
@@ -184,8 +205,9 @@
                 }
             };
 
-            const maxRetries = 3;
-            for (let i = 0; i < maxRetries; i++) {
+            let lastError;
+            // 指數退避重試機制：1s, 2s, 4s, 8s, 16s
+            for (let i = 0; i < 5; i++) {
                 try {
                     const response = await fetch(url, {
                         method: 'POST',
@@ -193,18 +215,24 @@
                         body: JSON.stringify(payload)
                     });
 
+                    const result = await response.json();
+                    
                     if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+                        throw new Error(result.error?.message || `HTTP ${response.status}`);
                     }
 
-                    const data = await response.json();
-                    return JSON.parse(data.candidates[0].content.parts[0].text);
-                } catch (error) {
-                    if (i === maxRetries - 1) throw error;
-                    await new Promise(res => setTimeout(res, 1000 * (i + 1)));
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!text) throw new Error("API 未回傳內容");
+                    
+                    return JSON.parse(text);
+                } catch (err) {
+                    lastError = err;
+                    console.warn(`第 ${i + 1} 次嘗試失敗: ${err.message}`);
+                    const delay = Math.pow(2, i) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
                 }
             }
+            throw lastError;
         }
 
         async function generatePlan() {
@@ -214,13 +242,8 @@
             const resultArea = document.getElementById('recipe-result');
             const errorBox = document.getElementById('error-box');
 
-            if (!apiKey) {
-                showError("API Key 尚未設定", "請在 HTML 代碼中的第 142 行填入您的 API Key。");
-                return;
-            }
-
             if (!ingredients) {
-                showError("請輸入食材", "至少告訴主廚您冰箱裡有什麼。");
+                alert("請告訴主廚您的冰箱裡有哪些食材。");
                 return;
             }
 
@@ -230,20 +253,17 @@
             resultArea.innerHTML = "";
             errorBox.classList.add('hidden');
 
-            const toolsList = Array.from(selectedTools).join('、') || "一般瓦斯爐";
-            const prompt = `食材：${ingredients}。工具：${toolsList}。規劃5天，每天2菜。`;
+            const toolsString = Array.from(selectedTools).join('、') || "基本瓦斯爐";
+            const userQuery = `我的食材：${ingredients}。可用工具：${toolsString}。請設計週一至週五每日兩菜的便當食譜。`;
 
             try {
-                const data = await callGemini(prompt);
-                renderResults(data);
+                const data = await callGemini(userQuery);
+                renderUI(data);
             } catch (err) {
-                console.error("Detailed Error:", err);
-                let hint = "請檢查網路連線或 API Key 是否正確。";
-                if (err.message.includes("403")) hint = "API Key 權限錯誤，請確認金鑰是否有效。";
-                if (err.message.includes("404")) hint = "找不到模型，請確認模型名稱。";
-                if (err.message.includes("fetch")) hint = "可能是 CORS 跨域限制，請嘗試用 Live Server 開啟 HTML。";
-                
-                showError("主廚遇到困難了：" + err.message, hint);
+                console.error("Master Error:", err);
+                document.getElementById('error-msg').innerText = err.message;
+                document.getElementById('diagnostic-hint').innerText = "提示：請確保 API 金鑰有效且網路連線正常。";
+                errorBox.classList.remove('hidden');
             } finally {
                 btn.disabled = false;
                 btn.classList.remove('opacity-50');
@@ -251,52 +271,79 @@
             }
         }
 
-        function renderResults(data) {
+        function renderUI(data) {
             const resultArea = document.getElementById('recipe-result');
-            if (data.missingIngredients?.length > 0) {
-                resultArea.innerHTML = `
-                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-2xl mb-6">
-                        <p class="text-xs text-yellow-700">建議補貨：${data.missingIngredients.join('、')}</p>
+            
+            if (data.missingIngredients && data.missingIngredients.length > 0) {
+                const hint = document.createElement('div');
+                hint.className = "bg-orange-50 border border-orange-100 p-5 rounded-[1.5rem] flex items-start space-x-3";
+                hint.innerHTML = `
+                    <div class="bg-orange-500 rounded-full p-1.5 flex-shrink-0 mt-0.5">
+                        <i class="fa-solid fa-lightbulb text-white text-[10px]"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-orange-600 uppercase tracking-widest">採購小建議</p>
+                        <p class="text-xs text-orange-800 mt-1 leading-relaxed">補點食材層次更豐富：${data.missingIngredients.join('、')}</p>
                     </div>
                 `;
+                resultArea.appendChild(hint);
             }
 
-            data.dailyPlan.forEach(day => {
+            data.dailyPlan.forEach(plan => {
                 const card = document.createElement('div');
-                card.className = "bg-white rounded-3xl shadow-sm p-5 space-y-4 border border-gray-100";
+                card.className = "bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6 space-y-4 hover:shadow-md transition-shadow";
+                
+                const dishesHtml = plan.dishes.map(dish => `
+                    <div class="group cursor-pointer" onclick="showSteps('${dish.name}', \`${dish.steps.replace(/`/g, "'")}\`)">
+                        <div class="flex items-center justify-between p-4 rounded-2xl bg-gray-50 group-hover:bg-orange-50 transition-colors border border-transparent group-hover:border-orange-100">
+                            <div>
+                                <span class="text-[9px] font-black text-orange-400 uppercase tracking-tighter">${dish.type || '家常風味'}</span>
+                                <h4 class="font-bold text-gray-800 mt-0.5">${dish.name}</h4>
+                            </div>
+                            <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-orange-300 group-hover:text-orange-500 shadow-sm transition-colors">
+                                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
                 card.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <span class="px-3 py-1 bg-gray-800 text-white text-xs font-bold rounded-full">${day.day}</span>
+                    <div class="flex items-center justify-between border-b border-gray-50 pb-3 mb-1">
+                        <h3 class="text-sm font-black text-gray-900 tracking-widest uppercase">${plan.day}</h3>
+                        <i class="fa-solid fa-calendar-check text-gray-200"></i>
                     </div>
                     <div class="space-y-3">
-                        ${day.dishes.map(dish => `
-                            <div class="p-3 rounded-2xl bg-gray-50 cursor-pointer hover:bg-orange-50 transition-colors" onclick="showSteps('${dish.name}', \`${dish.steps}\`)">
-                                <span class="text-xs text-orange-500 block">${dish.type}</span>
-                                <span class="font-semibold text-gray-800">${dish.name}</span>
-                            </div>
-                        `).join('')}
+                        ${dishesHtml}
                     </div>
                 `;
                 resultArea.appendChild(card);
             });
         }
 
-        function showError(msg, hint) {
-            const errorBox = document.getElementById('error-box');
-            document.getElementById('error-msg').innerText = msg;
-            document.getElementById('error-hint').innerText = hint;
-            errorBox.classList.remove('hidden');
-        }
-
         function showSteps(title, steps) {
             const modal = document.getElementById('instruction-modal');
             document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-content').innerHTML = steps.split('\n').map(s => `<p class="mb-2">${s}</p>`).join('');
-            modal.classList.replace('hidden', 'flex');
+            
+            const stepsList = steps.split('\n')
+                .filter(s => s.trim() !== "")
+                .map((s, i) => `
+                    <div class="flex space-x-3">
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-600 text-[10px] flex items-center justify-center font-black">${i + 1}</span>
+                        <p class="text-gray-600">${s.replace(/^\d+[\.、\s]*/, '')}</p>
+                    </div>
+                `).join('');
+            
+            document.getElementById('modal-content').innerHTML = stepsList;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
         }
 
         function closeModal() {
-            document.getElementById('instruction-modal').classList.replace('flex', 'hidden');
+            const modal = document.getElementById('instruction-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
         }
     </script>
 </body>
