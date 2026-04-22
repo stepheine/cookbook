@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家庭烹飪大師 - 五日便當提案</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto+Sans+TC', sans-serif;
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #f97316;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .tool-chip.active {
+            background-color: #f97316;
+            color: white;
+            border-color: #f97316;
+        }
+    </style>
+</head>
+<body class="max-w-md mx-auto bg-gray-50 min-h-screen pb-10">
+
+    <!-- Header -->
+    <header class="bg-white px-6 pt-8 pb-6 rounded-b-3xl shadow-sm sticky top-0 z-50">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">家庭烹飪大師</h1>
+                <p class="text-sm text-gray-500">五日便當食譜設計</p>
+            </div>
+            <div class="bg-orange-100 p-3 rounded-2xl">
+                <i class="fa-solid fa-utensils text-orange-500 text-xl"></i>
+            </div>
+        </div>
+    </header>
+
+    <main class="px-6 mt-6 space-y-6">
+        
+        <!-- Ingredients Input -->
+        <section class="space-y-3">
+            <label class="flex items-center text-gray-700 font-medium space-x-2">
+                <i class="fa-solid fa-basket-shopping text-orange-500"></i>
+                <span>冰箱裡的食材</span>
+            </label>
+            <textarea id="ingredients" 
+                class="w-full h-32 p-4 rounded-2xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-orange-500 outline-none transition-all shadow-sm text-gray-600 leading-relaxed"
+                placeholder="例如：雞胸肉、雞蛋、高麗菜、洋蔥..."></textarea>
+        </section>
+
+        <!-- Tool Selection -->
+        <section class="space-y-3">
+            <label class="flex items-center text-gray-700 font-medium space-x-2">
+                <i class="fa-solid fa-fire-burner text-orange-500"></i>
+                <span>廚房加熱工具</span>
+            </label>
+            <div class="grid grid-cols-2 gap-3" id="tool-container">
+                <button onclick="toggleTool(this)" data-tool="IH爐" class="tool-chip flex items-center justify-center p-3 rounded-xl border-2 border-gray-100 bg-white text-gray-600 transition-all">
+                    <span class="text-sm font-medium">IH 爐</span>
+                </button>
+                <button onclick="toggleTool(this)" data-tool="卡式爐" class="tool-chip flex items-center justify-center p-3 rounded-xl border-2 border-gray-100 bg-white text-gray-600 transition-all">
+                    <span class="text-sm font-medium">卡式爐</span>
+                </button>
+                <button onclick="toggleTool(this)" data-tool="水波爐" class="tool-chip flex items-center justify-center p-3 rounded-xl border-2 border-gray-100 bg-white text-gray-600 transition-all">
+                    <span class="text-sm font-medium">水波爐</span>
+                </button>
+                <button onclick="toggleTool(this)" data-tool="烤箱" class="tool-chip flex items-center justify-center p-3 rounded-xl border-2 border-gray-100 bg-white text-gray-600 transition-all">
+                    <span class="text-sm font-medium">烤箱</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Generate Button -->
+        <button id="generate-btn" 
+            onclick="generatePlan()"
+            class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-200 transition-all active:scale-95 flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-magic-wand-sparkles"></i>
+            <span>生成五日食譜</span>
+        </button>
+
+        <!-- Result Section -->
+        <div id="loading" class="hidden flex flex-col items-center py-10 space-y-4">
+            <div class="loader"></div>
+            <p class="text-gray-500 text-sm animate-pulse">主廚正在規劃您的專屬便當...</p>
+        </div>
+
+        <!-- Diagnostic Error Box -->
+        <div id="error-box" class="hidden p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm">
+            <div class="flex items-start space-x-2">
+                <i class="fa-solid fa-triangle-exclamation mt-1"></i>
+                <div>
+                    <p class="font-bold">發生錯誤</p>
+                    <p id="error-msg" class="mt-1"></p>
+                    <p id="error-hint" class="mt-2 text-xs opacity-75 border-top pt-2 border-red-200"></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="recipe-result" class="space-y-6 pb-10"></div>
+    </main>
+
+    <!-- Modal for Instructions -->
+    <div id="instruction-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] p-6 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 id="modal-title" class="text-lg font-bold text-gray-800">料理步驟</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            </div>
+            <div id="modal-content" class="text-gray-600 text-sm leading-relaxed overflow-y-auto max-h-96"></div>
+            <button onclick="closeModal()" class="w-full bg-gray-100 py-3 rounded-xl font-medium text-gray-600">關閉</button>
+        </div>
+    </div>
+
+    <script>
+        // 請在此處填入您的 API Key
+        const apiKey = "AIzaSyAihawTkcY1rbI7NedpHdfUr3P1gvjNwow"; 
+        const selectedTools = new Set();
+
+        function toggleTool(btn) {
+            const tool = btn.getAttribute('data-tool');
+            if (selectedTools.has(tool)) {
+                selectedTools.delete(tool);
+                btn.classList.remove('active');
+            } else {
+                selectedTools.add(tool);
+                btn.classList.add('active');
+            }
+        }
+
+        async function callGemini(prompt) {
+            // 本機執行建議使用 gemini-1.5-flash 以獲得最佳相容性
+            const modelName = "gemini-1.5-flash"; 
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+            
+            const systemInstruction = "你是一位烹飪專家。請根據食材與工具設計5天便當食譜。每天2道菜。格式必須為純 JSON。";
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            dailyPlan: {
+                                type: "ARRAY",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        day: { type: "STRING" },
+                                        dishes: {
+                                            type: "ARRAY",
+                                            items: {
+                                                type: "OBJECT",
+                                                properties: {
+                                                    name: { type: "STRING" },
+                                                    type: { type: "STRING" },
+                                                    steps: { type: "STRING" }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            missingIngredients: { type: "ARRAY", items: { type: "STRING" } }
+                        }
+                    }
+                }
+            };
+
+            const maxRetries = 3;
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    return JSON.parse(data.candidates[0].content.parts[0].text);
+                } catch (error) {
+                    if (i === maxRetries - 1) throw error;
+                    await new Promise(res => setTimeout(res, 1000 * (i + 1)));
+                }
+            }
+        }
+
+        async function generatePlan() {
+            const ingredients = document.getElementById('ingredients').value.trim();
+            const btn = document.getElementById('generate-btn');
+            const loader = document.getElementById('loading');
+            const resultArea = document.getElementById('recipe-result');
+            const errorBox = document.getElementById('error-box');
+
+            if (!apiKey) {
+                showError("API Key 尚未設定", "請在 HTML 代碼中的第 142 行填入您的 API Key。");
+                return;
+            }
+
+            if (!ingredients) {
+                showError("請輸入食材", "至少告訴主廚您冰箱裡有什麼。");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+            loader.classList.remove('hidden');
+            resultArea.innerHTML = "";
+            errorBox.classList.add('hidden');
+
+            const toolsList = Array.from(selectedTools).join('、') || "一般瓦斯爐";
+            const prompt = `食材：${ingredients}。工具：${toolsList}。規劃5天，每天2菜。`;
+
+            try {
+                const data = await callGemini(prompt);
+                renderResults(data);
+            } catch (err) {
+                console.error("Detailed Error:", err);
+                let hint = "請檢查網路連線或 API Key 是否正確。";
+                if (err.message.includes("403")) hint = "API Key 權限錯誤，請確認金鑰是否有效。";
+                if (err.message.includes("404")) hint = "找不到模型，請確認模型名稱。";
+                if (err.message.includes("fetch")) hint = "可能是 CORS 跨域限制，請嘗試用 Live Server 開啟 HTML。";
+                
+                showError("主廚遇到困難了：" + err.message, hint);
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+                loader.classList.add('hidden');
+            }
+        }
+
+        function renderResults(data) {
+            const resultArea = document.getElementById('recipe-result');
+            if (data.missingIngredients?.length > 0) {
+                resultArea.innerHTML = `
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-2xl mb-6">
+                        <p class="text-xs text-yellow-700">建議補貨：${data.missingIngredients.join('、')}</p>
+                    </div>
+                `;
+            }
+
+            data.dailyPlan.forEach(day => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-3xl shadow-sm p-5 space-y-4 border border-gray-100";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="px-3 py-1 bg-gray-800 text-white text-xs font-bold rounded-full">${day.day}</span>
+                    </div>
+                    <div class="space-y-3">
+                        ${day.dishes.map(dish => `
+                            <div class="p-3 rounded-2xl bg-gray-50 cursor-pointer hover:bg-orange-50 transition-colors" onclick="showSteps('${dish.name}', \`${dish.steps}\`)">
+                                <span class="text-xs text-orange-500 block">${dish.type}</span>
+                                <span class="font-semibold text-gray-800">${dish.name}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                resultArea.appendChild(card);
+            });
+        }
+
+        function showError(msg, hint) {
+            const errorBox = document.getElementById('error-box');
+            document.getElementById('error-msg').innerText = msg;
+            document.getElementById('error-hint').innerText = hint;
+            errorBox.classList.remove('hidden');
+        }
+
+        function showSteps(title, steps) {
+            const modal = document.getElementById('instruction-modal');
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-content').innerHTML = steps.split('\n').map(s => `<p class="mb-2">${s}</p>`).join('');
+            modal.classList.replace('hidden', 'flex');
+        }
+
+        function closeModal() {
+            document.getElementById('instruction-modal').classList.replace('flex', 'hidden');
+        }
+    </script>
+</body>
+</html>
