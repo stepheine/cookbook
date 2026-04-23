@@ -122,7 +122,7 @@
 
   /* Main scroll area */
   .scroll-area {
-    padding: 20px 20px 120px;
+    padding: 20px 20px 40px;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -632,41 +632,7 @@
   }
 
   /* Bottom nav */
-  .bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    max-width: 430px;
-    background: rgba(15,14,12,0.92);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid var(--border);
-    padding: 10px 0 24px;
-    display: flex;
-    justify-content: space-around;
-    z-index: 100;
-  }
 
-  .nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    cursor: pointer;
-    padding: 4px 16px;
-    border-radius: var(--radius-sm);
-    transition: opacity 0.2s;
-    opacity: 0.5;
-  }
-
-  .nav-item.active { opacity: 1; }
-  .nav-item:active { opacity: 0.7; }
-
-  .nav-icon { font-size: 22px; }
-  .nav-label { font-size: 10px; color: var(--text-dim); letter-spacing: 0.05em; }
-  .nav-item.active .nav-label { color: var(--gold); }
 
   /* Loading state in results */
   .loading-state {
@@ -801,14 +767,14 @@
       <div class="card-header">
         <div class="card-icon green">🔑</div>
         <div>
-          <div class="card-title">Gemini API Key</div>
-          <div class="card-subtitle">本機運行需填入金鑰，僅存於瀏覽器記憶體</div>
+          <div class="card-title">OpenRouter API Key</div>
+          <div class="card-subtitle">免費・無需信用卡・支援數百種模型</div>
         </div>
       </div>
       <div class="card-body">
         <div class="ingredient-input-row">
           <input class="ingredient-input" id="apiKeyInput" type="password"
-            placeholder="AIza…"
+            placeholder="sk-or-v1-…"
             autocomplete="off" autocorrect="off" spellcheck="false">
           <button class="add-btn" onclick="saveApiKey()" title="儲存">✓</button>
         </div>
@@ -816,7 +782,8 @@
           尚未設定 API Key
         </div>
         <div style="margin-top:10px;padding:10px 12px;background:var(--surface2);border-radius:var(--radius-sm);font-size:11px;color:var(--text-muted);line-height:1.8;">
-          📌 取得方式：前往 <span style="color:var(--gold)">aistudio.google.com/apikey</span> → Create API Key<br>
+          📌 取得方式：前往 <span style="color:var(--gold)">openrouter.ai/settings/keys</span> → Create Key<br>
+          🆓 免費方案每日 200 次請求，無需綁定信用卡<br>
           🔒 Key 僅存於此分頁記憶體，關閉即清除
         </div>
       </div>
@@ -835,25 +802,6 @@
   <!-- Results -->
   <div class="results-section" id="resultsSection"></div>
 
-  <!-- Bottom Nav -->
-  <div class="bottom-nav">
-    <div class="nav-item active">
-      <span class="nav-icon">🗓️</span>
-      <span class="nav-label">食譜</span>
-    </div>
-    <div class="nav-item">
-      <span class="nav-icon">📦</span>
-      <span class="nav-label">食材庫</span>
-    </div>
-    <div class="nav-item">
-      <span class="nav-icon">⭐</span>
-      <span class="nav-label">收藏</span>
-    </div>
-    <div class="nav-item">
-      <span class="nav-icon">👤</span>
-      <span class="nav-label">我的</span>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -1041,36 +989,111 @@ async function generateRecipes() {
   // Check API key
   const apiKey = window._apiKey || '';
   if (!apiKey) {
-    resultsSection.innerHTML = `<div class="error-banner">🔑 請先填入 Gemini API Key（頁面下方欄位），再生成食譜。</div>`;
+    resultsSection.innerHTML = `<div class="error-banner">🔑 請先填入 OpenRouter API Key（頁面下方欄位），再生成食譜。</div>`;
     btn.classList.remove('loading');
     document.getElementById('apiKeyInput')?.focus();
     return;
   }
 
-  // Gemini API endpoint — key passed as query param (no CORS issue)
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+  // Free models on OpenRouter — primary + fallbacks (in priority order)
+  const FREE_MODELS = [
+    'deepseek/deepseek-chat-v3-0324:free',   // DeepSeek V3，指令理解強
+    'meta-llama/llama-4-maverick:free',       // Llama 4 Maverick
+    'meta-llama/llama-3.3-70b-instruct:free', // Llama 3.3 70B
+    'google/gemma-3-27b-it:free',             // Gemma 3 27B
+    'mistralai/mistral-small-3.1-24b-instruct:free', // Mistral Small
+  ];
+  let modelIndex = 0;
 
   const MAX_RETRIES = 4;
   const RETRY_DELAYS = [5000, 10000, 20000, 30000]; // 5s, 10s, 20s, 30s
 
-  const isRetryable = (msg) =>
-    msg.includes('high demand') ||
-    msg.includes('overloaded') ||
-    msg.includes('503') ||
-    msg.includes('429') ||
-    msg.includes('quota') ||
-    msg.includes('RESOURCE_EXHAUSTED') ||
-    msg.includes('temporarily');
+  // 依 HTTP status 產生結構化錯誤物件
+  const parseApiError = async (response) => {
+    const status = response.status;
+    let apiMsg = '';
+    try {
+      const errData = await response.json();
+      apiMsg = errData?.error?.message || errData?.error?.status || '';
+    } catch (_) {}
 
-  const showRetryStatus = (attempt, waitSec) => {
+    const errors = {
+      403: {
+        code: '403 Forbidden',
+        title: '🔒 API Key 無效或權限不足',
+        actions: [
+          'Key 格式應為 sk-or-v1-… ，請確認複製完整',
+          '至 openrouter.ai/settings/keys 確認 Key 狀態是否啟用',
+          '免費方案每日上限 200 次，確認今日額度未用盡',
+        ]
+      },
+      401: {
+        code: '401 Unauthorized',
+        title: '🔑 API Key 驗證失敗',
+        actions: [
+          '請重新複製 Key 並確認沒有多餘空白',
+          '至 openrouter.ai/settings/keys 重新產生新 Key',
+        ]
+      },
+      402: {
+        code: '402 Payment Required',
+        title: '💳 帳戶額度不足',
+        actions: [
+          '免費模型（:free）不需付費，但請確認使用的是免費模型',
+          '至 openrouter.ai/credits 查看帳戶狀態',
+        ]
+      },
+      404: {
+        code: '404 Not Found',
+        title: '🔍 所有備用模型皆無法使用',
+        actions: [
+          '已自動嘗試 5 個免費模型均失敗',
+          '至 openrouter.ai/collections/free-models 查看目前可用的免費模型',
+          '或至 openrouter.ai/credits 加值後使用付費模型',
+        ]
+      },
+      429: {
+        code: '429 Too Many Requests',
+        title: '🚦 請求頻率過高',
+        actions: [
+          '免費方案有每分鐘請求限制',
+          '系統將自動等待後重試，請稍候',
+        ]
+      },
+      503: {
+        code: '503 Service Unavailable',
+        title: '⏳ 模型服務暫時無法使用',
+        actions: [
+          '上游模型提供商暫時無法服務，屬短暫性問題',
+          '系統將自動重試，請稍候',
+        ]
+      },
+    };
+
+    const known = errors[status];
+    const err = new Error(known ? known.code : (apiMsg || `HTTP ${status}`));
+    err.status = status;
+    err.detail = known || null;
+    err.apiMsg = apiMsg;
+    return err;
+  };
+
+  const isRetryable = (err) =>
+    err.status === 503 ||
+    err.status === 429 ||
+    (err.message || '').includes('high demand') ||
+    (err.message || '').includes('overloaded') ||
+    (err.message || '').includes('RESOURCE_EXHAUSTED') ||
+    (err.message || '').includes('temporarily');
+
+  const showRetryStatus = (attempt, waitSec, errDetail) => {
     resultsSection.innerHTML = `
       <div class="loading-state">
         <div class="loading-ring"></div>
-        <div class="loading-text">伺服器忙碌中，稍後重試…</div>
+        <div class="loading-text">${errDetail?.title || '伺服器忙碌中，稍後重試…'}</div>
         <div class="loading-sub">第 ${attempt}／${MAX_RETRIES} 次重試，${waitSec} 秒後自動發送</div>
         <div id="retryCountdown" style="font-size:28px;font-weight:700;color:var(--gold);font-family:'Noto Serif TC',serif;margin-top:4px;">${waitSec}</div>
       </div>`;
-    // Countdown
     let remaining = waitSec;
     const iv = setInterval(() => {
       remaining--;
@@ -1080,20 +1103,25 @@ async function generateRecipes() {
     }, 1000);
   };
 
+  const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
+
   const callApi = async () => {
-    const response = await fetch(endpoint, {
+    const model = FREE_MODELS[modelIndex];
+    const response = await fetch(ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'X-Title': 'Family Cooking Master',
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.8, maxOutputTokens: 3000 }
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.8,
+        max_tokens: 3000,
       })
     });
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      const msg = errData?.error?.message || `HTTP ${response.status}`;
-      throw new Error(msg);
-    }
+    if (!response.ok) throw await parseApiError(response);
     return response.json();
   };
 
@@ -1101,52 +1129,80 @@ async function generateRecipes() {
 
   try {
     let lastErr;
+    const totalAttempts = MAX_RETRIES * FREE_MODELS.length;
+    let globalAttempt = 0;
+
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
-        // Show loading on first attempt
-        if (attempt === 0) {
+        const currentModel = FREE_MODELS[modelIndex];
+        if (globalAttempt === 0) {
           resultsSection.innerHTML = `
             <div class="loading-state">
               <div class="loading-ring"></div>
               <div class="loading-text">料理大師正在規劃中…</div>
-              <div class="loading-sub">正在為您設計本週最佳食譜組合</div>
+              <div class="loading-sub">使用模型：${currentModel.split('/')[1]?.replace(':free','')}</div>
             </div>`;
         }
 
         const data = await callApi();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        // OpenRouter uses OpenAI-compatible format: choices[0].message.content
+        const text = data?.choices?.[0]?.message?.content || '';
         const clean = text.replace(/```json[\s\S]*?```|```[\s\S]*?```|```/g, '').trim();
         const result = JSON.parse(clean);
         renderResults(result);
-        return; // success — exit
+        return;
 
       } catch (err) {
         lastErr = err;
-        if (attempt < MAX_RETRIES && isRetryable(err.message)) {
+        globalAttempt++;
+
+        // 404: 模型不存在 → 立刻切換到下一個模型
+        if (err.status === 404 && modelIndex < FREE_MODELS.length - 1) {
+          modelIndex++;
+          const nextModel = FREE_MODELS[modelIndex];
+          resultsSection.innerHTML = `
+            <div class="loading-state">
+              <div class="loading-ring"></div>
+              <div class="loading-text">切換備用模型中…</div>
+              <div class="loading-sub">嘗試：${nextModel.split('/')[1]?.replace(':free','')}</div>
+            </div>`;
+          await sleep(1500);
+          attempt--; // 不消耗重試次數，只換模型
+          continue;
+        }
+
+        if (attempt < MAX_RETRIES && isRetryable(err)) {
           const waitSec = RETRY_DELAYS[attempt] / 1000;
-          showRetryStatus(attempt + 1, waitSec);
+          showRetryStatus(attempt + 1, waitSec, err.detail);
           await sleep(RETRY_DELAYS[attempt]);
         } else {
-          throw err; // non-retryable or out of retries
+          throw err;
         }
       }
     }
     throw lastErr;
 
   } catch (err) {
-    let hint = '';
-    if (err.message.includes('high demand') || err.message.includes('503') || err.message.includes('overloaded')) {
-      hint = '<br><small style="opacity:0.7">Gemini 伺服器目前非常繁忙，已自動重試 ' + MAX_RETRIES + ' 次，請稍後再手動點擊生成</small>';
-    } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-      hint = '<br><small style="opacity:0.7">請確認網路連線是否正常</small>';
-    } else if (err.message.includes('API_KEY_INVALID') || err.message.includes('400')) {
-      hint = '<br><small style="opacity:0.7">API Key 無效，請至 aistudio.google.com/apikey 重新取得</small>';
-    } else if (err.message.includes('leaked')) {
-      hint = '<br><small style="opacity:0.7">此 Key 已被封鎖，請重新產生新的 API Key</small>';
-    } else if (err.message.includes('SyntaxError') || err.message.includes('JSON')) {
-      hint = '<br><small style="opacity:0.7">回應解析失敗，請再試一次</small>';
+    // 有結構化 detail（403/404/503/429）
+    if (err.detail) {
+      const { code, title, actions } = err.detail;
+      const actionHtml = actions.map(a => `<li style="margin-bottom:5px">${a}</li>`).join('');
+      resultsSection.innerHTML = `
+        <div class="error-banner" style="text-align:left">
+          <div style="font-weight:700;margin-bottom:8px;font-size:13px">${title}</div>
+          <div style="font-size:11px;opacity:0.6;margin-bottom:10px">錯誤代碼：${code}${err.apiMsg ? '　' + err.apiMsg : ''}</div>
+          <ul style="padding-left:16px;font-size:12px;line-height:1.9;opacity:0.85">${actionHtml}</ul>
+        </div>`;
+    } else {
+      // 其他未知錯誤
+      let hint = '';
+      if ((err.message || '').includes('Failed to fetch') || (err.message || '').includes('NetworkError')) {
+        hint = '<br><small style="opacity:0.7">請確認網路連線是否正常</small>';
+      } else if ((err.message || '').includes('SyntaxError') || (err.message || '').includes('JSON')) {
+        hint = '<br><small style="opacity:0.7">AI 回應格式異常，請再試一次</small>';
+      }
+      resultsSection.innerHTML = `<div class="error-banner">⚠️ 生成失敗：${err.message || '未知錯誤'}${hint}</div>`;
     }
-    resultsSection.innerHTML = `<div class="error-banner">⚠️ 生成失敗：${err.message}${hint}</div>`;
   } finally {
     btn.classList.remove('loading');
   }
@@ -1253,7 +1309,7 @@ function saveApiKey() {
   if (!val) return;
   window._apiKey = val;
   document.getElementById('apiKeyStatus').innerHTML =
-    `<span style="color:var(--green)">✓ Gemini API Key 已設定（${val.slice(0,8)}…）</span>`;
+    `<span style="color:var(--green)">✓ OpenRouter API Key 已設定（${val.slice(0,14)}…）</span>`;
   document.getElementById('apiKeyInput').value = '';
   document.getElementById('apiKeyInput').placeholder = '已設定，如需更換請重新輸入';
 }
